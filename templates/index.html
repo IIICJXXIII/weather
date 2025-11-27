@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+	    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+		<title>2022年各省气象情况</title>
+		<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+		<link rel="stylesheet" href="{% static 'css/app.css' %}" />
+		<script src="{% static 'js/echarts.min.js' %}"></script>
+		<script src="{% static 'js/china.js' %}"></script>
+		<script src="{% static 'js/wordcount.min.js' %}"></script>
+		<script src="{% static 'js/d3.min.js' %}"></script>
+
+		
+	</head>
+	
+	<body class="bg06">
+		<header class="header">
+			<h3>2022年各省份气象情况</h3>
+		</header>
+		
+		<div class="wrapper">
+			<div class="container-fluid">
+				<div class="row fill-h">
+					<div class="col-lg-3 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-1-2">
+							<div class="xpanel">
+								<div class="listbox list" id="list_box"></div>
+								<div class="fill-h1" id="id1"></div>
+							</div>
+						</div>
+						<div class="xpanel-wrapper xpanel-wrapper-1-2">
+							<div class="xpanel">
+								<div class="fill-h" id="id2"></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-6 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-2-1">
+							<div class="xpanel no-padding no-bg">
+								<div class="fill-h" id="id3"></div>
+							</div>
+						</div>	
+						<div class="xpanel-wrapper xpanel-wrapper-2-2">
+							<div class="xpanel no-padding no-bg">
+								<div class="fill-h" id="time_line"></div>
+							</div>
+						</div>
+						
+					</div>
+					<div class="col-lg-3 fill-h">
+						<div class="xpanel-wrapper xpanel-wrapper-1-2">
+							<div class="xpanel">
+								<div class="fill-h" id="id4"></div>
+							</div>
+						</div>
+						<div class="xpanel-wrapper xpanel-wrapper-1-3">
+							<div class="xpanel">
+								<div class="fill-h" id="id5"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			var text_style={color: '#00C6FB',fontSize: 14,}
+			var months={{ months }};
+			var month_index=(months && months.length)?months[0]:1;
+			var time_interval=5000;
+			var map_data1={{ map_data1 }};
+			var map_data2={{ map_data2 }};
+			var provinces={{ provinces }};
+			var line_data={{ line_data }};
+			var tree_data={{ tree_data }};
+			var word_data={{ word_data }};
+			var bar_data={{ bar_data }};
+		</script>
+
+		<script src="{% static 'js/map_chart.js' %}"></script>
+		<script src="{% static 'js/timeline.js' %}"></script>
+		<script src="{% static 'js/line_chart.js' %}"></script>
+		<script src="{% static 'js/tree_chart.js' %}"></script>
+		<script src="{% static 'js/word_chart.js' %}"></script>
+		<script src="{% static 'js/bar_chart.js' %}"></script>
+		<script src="{% static 'js/total_control.js' %}"></script>
+
+	</body>
+</html>
