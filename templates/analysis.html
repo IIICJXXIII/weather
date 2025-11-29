@@ -1,0 +1,1060 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}数据分析 - NCDC 气象数据平台{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        padding-top: 70px;
+    }
+    .page-title {
+        text-align: center;
+        color: #00C6FB;
+        font-size: 28px;
+        margin: 20px 0 30px;
+        text-shadow: 0 0 10px rgba(0, 198, 251, 0.5);
+    }
+    .analysis-section {
+        margin-bottom: 30px;
+    }
+    .section-title {
+        color: #00C6FB;
+        font-size: 20px;
+        margin-bottom: 15px;
+        padding-left: 15px;
+        border-left: 4px solid #00C6FB;
+    }
+    .chart-container {
+        background: rgba(0, 30, 60, 0.8);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0, 198, 251, 0.3);
+    }
+    .chart-box {
+        height: 400px;
+    }
+    .chart-box-large {
+        height: 500px;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, rgba(0, 198, 251, 0.2) 0%, rgba(119, 68, 255, 0.2) 100%);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        border: 1px solid rgba(0, 198, 251, 0.3);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 198, 251, 0.2);
+    }
+    .stat-icon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
+    .stat-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #00C6FB;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 14px;
+        color: #fff;
+    }
+    .stat-change {
+        font-size: 12px;
+        margin-top: 8px;
+        color: #fff;
+    }
+    .stat-change.up {
+        color: #FF6B6B;
+    }
+    .stat-change.down {
+        color: #00D9A5;
+    }
+    .filter-bar {
+        background: rgba(0, 30, 60, 0.8);
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+        border: 1px solid rgba(0, 198, 251, 0.3);
+    }
+    .filter-bar label {
+        color: #00C6FB;
+        margin-right: 8px;
+        font-weight: 500;
+    }
+    .filter-bar select {
+        background: rgba(0, 20, 50, 0.95);
+        border: 1px solid rgba(0, 198, 251, 0.5);
+        color: #fff;
+        padding: 10px 35px 10px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        min-width: 150px;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2300C6FB' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+    }
+    .filter-bar select:focus {
+        outline: none;
+        border-color: #00C6FB;
+        box-shadow: 0 0 10px rgba(0, 198, 251, 0.3);
+    }
+    .filter-bar select option {
+        background: #001e3c;
+        color: #fff;
+        padding: 10px;
+    }
+    .filter-bar button {
+        background: linear-gradient(135deg, #00C6FB 0%, #7744ff 100%);
+        border: none;
+        color: #fff;
+        padding: 10px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    .filter-bar button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 198, 251, 0.4);
+    }
+    .tab-nav {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        background: rgba(0, 30, 60, 0.9);
+        border: 1px solid rgba(0, 198, 251, 0.5);
+        color: #00C6FB;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    .tab-btn:hover {
+        background: rgba(0, 198, 251, 0.2);
+        color: #fff;
+        border-color: #00C6FB;
+    }
+    .tab-btn.active {
+        background: linear-gradient(135deg, #00C6FB 0%, #7744ff 100%);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(0, 198, 251, 0.4);
+    }
+    .extreme-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .extreme-table th,
+    .extreme-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid rgba(0, 198, 251, 0.2);
+    }
+    .extreme-table th {
+        background: rgba(0, 198, 251, 0.2);
+        color: #00C6FB;
+        font-weight: 600;
+    }
+    .extreme-table tr:hover {
+        background: rgba(0, 198, 251, 0.1);
+    }
+    .extreme-table td {
+        color: #fff;
+    }
+    .temp-hot {
+        color: #FF6B6B;
+    }
+    .temp-cold {
+        color: #6BC5FF;
+    }
+    .rank-badge {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff; }
+    .rank-other { background: rgba(0, 198, 251, 0.3); color: #00C6FB; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="page-title">📊 气象数据深度分析</h1>
+    
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🌡️</div>
+            <div class="stat-value">{{ stats.avg_temp }}°C</div>
+            <div class="stat-label">全国年均温度</div>
+            <div class="stat-change {% if stats.temp_change > 0 %}up{% else %}down{% endif %}">
+                {% if stats.temp_change > 0 %}↑{% else %}↓{% endif %} {{ stats.temp_change }}°C 较去年
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-value">{{ stats.max_temp }}°C</div>
+            <div class="stat-label">年度最高温</div>
+            <div class="stat-change">{{ stats.max_temp_province }} · {{ stats.max_temp_month }}月</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">❄️</div>
+            <div class="stat-value">{{ stats.min_temp }}°C</div>
+            <div class="stat-label">年度最低温</div>
+            <div class="stat-change">{{ stats.min_temp_province }} · {{ stats.min_temp_month }}月</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🌧️</div>
+            <div class="stat-value">{{ stats.max_rain_city }}</div>
+            <div class="stat-label">年均降水量最高城市</div>
+            <div class="stat-change">{{ stats.max_rain_value }} mm</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💨</div>
+            <div class="stat-value">{{ stats.max_wind }}m/s</div>
+            <div class="stat-label">年均风速最大</div>
+            <div class="stat-change">{{ stats.max_wind_province }}</div>
+        </div>
+    </div>
+    
+    <!-- 分析模块标签页 -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('precipitation')">🌧️ 降水量分析</button>
+        <button class="tab-btn" onclick="showTab('extreme')">🌡️ 极端天气</button>
+        <button class="tab-btn" onclick="showTab('trend')">📈 历史趋势</button>
+        <button class="tab-btn" onclick="showTab('seasonal')">🍂 季节对比</button>
+    </div>
+    
+    <!-- 降水量分析 -->
+    <div id="tab-precipitation" class="analysis-section">
+        <h2 class="section-title">降水量分析</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="precipitationBarChart"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="precipitationPieChart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart-container">
+                    <div class="chart-box" id="precipitationTrendChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 极端天气分析 -->
+    <div id="tab-extreme" class="analysis-section" style="display: none;">
+        <h2 class="section-title">极端天气统计</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h4 style="color: #FF6B6B; margin-bottom: 15px;">🔥 高温排行榜 (月均温度 TOP 10)</h4>
+                    <table class="extreme-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>省份</th>
+                                <th>月份</th>
+                                <th>平均温度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hotRankTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h4 style="color: #6BC5FF; margin-bottom: 15px;">❄️ 低温排行榜 (月均温度 TOP 10)</h4>
+                    <table class="extreme-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>省份</th>
+                                <th>月份</th>
+                                <th>平均温度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coldRankTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart-container">
+                    <div class="chart-box-large" id="extremeHeatmapChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 历史趋势分析 -->
+    <div id="tab-trend" class="analysis-section" style="display: none;">
+        <h2 class="section-title">历史趋势分析 (2000-2022)</h2>
+        <div class="filter-bar">
+            <label>选择省份:</label>
+            <select id="trendProvinceSelect">
+                <!-- 选项由 JavaScript 动态生成 -->
+            </select>
+            <button onclick="updateTrendChart()">查看趋势</button>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart-container">
+                    <div class="chart-box-large" id="yearlyTrendChart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="decadeCompareChart"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="anomalyChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 季节对比分析 -->
+    <div id="tab-seasonal" class="analysis-section" style="display: none;">
+        <h2 class="section-title">季节气温对比</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="seasonalRadarChart"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-box" id="seasonalBoxChart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="chart-container">
+                    <div class="chart-box" id="seasonalStackChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 数据变量
+    var months = {{ months|safe }};
+    var provinces = {{ provinces|safe }};
+    var precipitationData = {{ precipitation_data|safe }};
+    var extremeData = {{ extreme_data|safe }};
+    var historyData = {{ history_data|safe }};
+    var seasonalData = {{ seasonal_data|safe }};
+    
+    // 标签页切换
+    function showTab(tabName) {
+        document.querySelectorAll('.analysis-section').forEach(function(section) {
+            section.style.display = 'none';
+        });
+        document.getElementById('tab-' + tabName).style.display = 'block';
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+    }
+    
+    // 1. 降水量柱状图
+    function renderPrecipitationBarChart() {
+        var chart = echarts.init(document.getElementById('precipitationBarChart'));
+        
+        var cityRain = {};
+        for (var month in precipitationData) {
+            var data = precipitationData[month];
+            if (data.city) {
+                for (var i = 0; i < data.city.length; i++) {
+                    var city = data.city[i];
+                    var rain = data.precipitation[i];
+                    if (!cityRain[city]) cityRain[city] = 0;
+                    cityRain[city] += rain;
+                }
+            }
+        }
+        
+        var sorted = Object.entries(cityRain).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        var cities = sorted.map(x => x[0]);
+        var values = sorted.map(x => Math.round(x[1]));
+        
+        var option = {
+            title: {
+                text: '年度降水量 TOP 10 城市',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: '{b}: {c} mm'
+            },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'value',
+                name: '降水量(mm)',
+                nameTextStyle: { color: '#fff' },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            yAxis: {
+                type: 'category',
+                data: cities.reverse(),
+                axisLabel: { color: '#fff' },
+                axisLine: { lineStyle: { color: '#00C6FB' } }
+            },
+            series: [{
+                type: 'bar',
+                data: values.reverse(),
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#00C6FB' },
+                        { offset: 1, color: '#005BEA' }
+                    ])
+                },
+                label: {
+                    show: true,
+                    position: 'right',
+                    color: '#fff',
+                    formatter: '{c} mm'
+                }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 2. 降水量季节占比饼图
+    function renderPrecipitationPieChart() {
+        var chart = echarts.init(document.getElementById('precipitationPieChart'));
+        
+        var seasonal = { '春季(3-5月)': 0, '夏季(6-8月)': 0, '秋季(9-11月)': 0, '冬季(12-2月)': 0 };
+        for (var month in precipitationData) {
+            var m = parseInt(month);
+            var data = precipitationData[month];
+            if (data.precipitation) {
+                var total = data.precipitation.reduce((a, b) => a + b, 0);
+                if (m >= 3 && m <= 5) seasonal['春季(3-5月)'] += total;
+                else if (m >= 6 && m <= 8) seasonal['夏季(6-8月)'] += total;
+                else if (m >= 9 && m <= 11) seasonal['秋季(9-11月)'] += total;
+                else seasonal['冬季(12-2月)'] += total;
+            }
+        }
+        
+        var pieData = Object.entries(seasonal).map(x => ({ name: x[0], value: Math.round(x[1]) }));
+        
+        var option = {
+            title: {
+                text: '降水量季节分布',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} mm ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                textStyle: { color: '#fff' }
+            },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#001e3c',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    color: '#fff',
+                    formatter: '{b}\n{d}%'
+                },
+                emphasis: {
+                    label: { show: true, fontSize: 16, fontWeight: 'bold' }
+                },
+                data: pieData,
+                color: ['#00D9A5', '#FF6B6B', '#FFD93D', '#6BC5FF']
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 3. 各月降水量趋势
+    function renderPrecipitationTrendChart() {
+        var chart = echarts.init(document.getElementById('precipitationTrendChart'));
+        
+        var monthlyTotal = [];
+        for (var i = 1; i <= 12; i++) {
+            var data = precipitationData[i];
+            if (data && data.precipitation) {
+                monthlyTotal.push(Math.round(data.precipitation.reduce((a, b) => a + b, 0)));
+            } else {
+                monthlyTotal.push(0);
+            }
+        }
+        
+        var option = {
+            title: {
+                text: '各月降水量趋势 (TOP 10城市汇总)',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: '{b}: {c} mm'
+            },
+            xAxis: {
+                type: 'category',
+                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                axisLabel: { color: '#fff' },
+                axisLine: { lineStyle: { color: '#00C6FB' } }
+            },
+            yAxis: {
+                type: 'value',
+                name: '降水量(mm)',
+                nameTextStyle: { color: '#fff' },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            series: [{
+                type: 'line',
+                data: monthlyTotal,
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 10,
+                lineStyle: { color: '#00C6FB', width: 3 },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(0, 198, 251, 0.5)' },
+                        { offset: 1, color: 'rgba(0, 198, 251, 0.1)' }
+                    ])
+                },
+                itemStyle: { color: '#00C6FB' }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 4. 极端天气排行表格
+    function renderExtremeRankTables() {
+        var hotHtml = '';
+        if (extremeData.hot_rank) {
+            extremeData.hot_rank.forEach(function(item, index) {
+                var rankClass = index < 3 ? 'rank-' + (index + 1) : 'rank-other';
+                hotHtml += '<tr>' +
+                    '<td><span class="rank-badge ' + rankClass + '">' + (index + 1) + '</span></td>' +
+                    '<td>' + item.province + '</td>' +
+                    '<td>' + item.month + '月</td>' +
+                    '<td class="temp-hot">' + item.temp + '°C</td>' +
+                    '</tr>';
+            });
+        }
+        document.getElementById('hotRankTable').innerHTML = hotHtml;
+        
+        var coldHtml = '';
+        if (extremeData.cold_rank) {
+            extremeData.cold_rank.forEach(function(item, index) {
+                var rankClass = index < 3 ? 'rank-' + (index + 1) : 'rank-other';
+                coldHtml += '<tr>' +
+                    '<td><span class="rank-badge ' + rankClass + '">' + (index + 1) + '</span></td>' +
+                    '<td>' + item.province + '</td>' +
+                    '<td>' + item.month + '月</td>' +
+                    '<td class="temp-cold">' + item.temp + '°C</td>' +
+                    '</tr>';
+            });
+        }
+        document.getElementById('coldRankTable').innerHTML = coldHtml;
+    }
+    
+    // 5. 极端天气热力图
+    function renderExtremeHeatmapChart() {
+        var chart = echarts.init(document.getElementById('extremeHeatmapChart'));
+        
+        var heatmapData = extremeData.heatmap_data || [];
+        var provinceList = extremeData.province_list || provinces;
+        
+        var option = {
+            title: {
+                text: '各省份月度温度热力图',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                position: 'top',
+                formatter: function(params) {
+                    return params.data[1] + ' - ' + (params.data[0] + 1) + '月: ' + params.data[2] + '°C';
+                }
+            },
+            grid: {
+                left: '10%',
+                right: '10%',
+                bottom: '15%',
+                top: '10%'
+            },
+            xAxis: {
+                type: 'category',
+                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                splitArea: { show: true },
+                axisLabel: { color: '#fff' }
+            },
+            yAxis: {
+                type: 'category',
+                data: provinceList,
+                splitArea: { show: true },
+                axisLabel: { color: '#fff', fontSize: 10 }
+            },
+            visualMap: {
+                min: -30,
+                max: 35,
+                calculable: true,
+                orient: 'horizontal',
+                left: 'center',
+                bottom: '0%',
+                textStyle: { color: '#fff' },
+                inRange: {
+                    color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+                }
+            },
+            series: [{
+                name: '温度',
+                type: 'heatmap',
+                data: heatmapData,
+                label: { show: false },
+                emphasis: {
+                    itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+                }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 6. 历史年度趋势图
+    function renderYearlyTrendChart(province) {
+        var chart = echarts.init(document.getElementById('yearlyTrendChart'));
+        
+        province = province || provinces[0];
+        var data = historyData[province] || {};
+        
+        var years = Object.keys(data).sort();
+        var avgTemps = years.map(function(year) {
+            var temps = data[year].temps || [];
+            return temps.length > 0 ? Math.round(temps.reduce((a, b) => a + b, 0) / temps.length * 10) / 10 : 0;
+        });
+        
+        var option = {
+            title: {
+                text: province + ' 年均温度变化趋势 (2000-2022)',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: '{b}年: {c}°C'
+            },
+            xAxis: {
+                type: 'category',
+                data: years,
+                axisLabel: { color: '#fff', rotate: 45 },
+                axisLine: { lineStyle: { color: '#00C6FB' } }
+            },
+            yAxis: {
+                type: 'value',
+                name: '年均温度(°C)',
+                nameTextStyle: { color: '#fff' },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { start: 0, end: 100, textStyle: { color: '#fff' } }
+            ],
+            series: [{
+                type: 'line',
+                data: avgTemps,
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 8,
+                lineStyle: { color: '#FF6B6B', width: 3 },
+                itemStyle: { color: '#FF6B6B' },
+                markLine: {
+                    data: [{ type: 'average', name: '平均值' }],
+                    lineStyle: { color: '#FFD93D' },
+                    label: { color: '#FFD93D' }
+                }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    function updateTrendChart() {
+        var province = document.getElementById('trendProvinceSelect').value;
+        renderYearlyTrendChart(province);
+        renderDecadeCompareChart(province);
+        renderAnomalyChart(province);
+    }
+    
+    // 7. 十年对比图
+    function renderDecadeCompareChart(province) {
+        var chart = echarts.init(document.getElementById('decadeCompareChart'));
+        
+        province = province || provinces[0];
+        var data = historyData[province] || {};
+        
+        var periods = {
+            '2000-2007': { temps: [] },
+            '2008-2015': { temps: [] },
+            '2016-2022': { temps: [] }
+        };
+        
+        Object.keys(data).forEach(function(year) {
+            var y = parseInt(year);
+            var temps = data[year].temps || [];
+            var avg = temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
+            
+            if (y <= 2007) periods['2000-2007'].temps.push(avg);
+            else if (y <= 2015) periods['2008-2015'].temps.push(avg);
+            else periods['2016-2022'].temps.push(avg);
+        });
+        
+        var periodData = Object.entries(periods).map(function(entry) {
+            var temps = entry[1].temps;
+            return {
+                name: entry[0],
+                value: temps.length > 0 ? Math.round(temps.reduce((a, b) => a + b, 0) / temps.length * 10) / 10 : 0
+            };
+        });
+        
+        var option = {
+            title: {
+                text: '三阶段平均温度对比',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: { trigger: 'axis', formatter: '{b}: {c}°C' },
+            xAxis: {
+                type: 'category',
+                data: periodData.map(x => x.name),
+                axisLabel: { color: '#fff' }
+            },
+            yAxis: {
+                type: 'value',
+                name: '平均温度(°C)',
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            series: [{
+                type: 'bar',
+                data: periodData.map(x => x.value),
+                itemStyle: {
+                    color: function(params) {
+                        var colors = ['#6BC5FF', '#FFD93D', '#FF6B6B'];
+                        return colors[params.dataIndex];
+                    }
+                },
+                label: { show: true, position: 'top', color: '#fff', formatter: '{c}°C' }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 8. 温度异常图
+    function renderAnomalyChart(province) {
+        var chart = echarts.init(document.getElementById('anomalyChart'));
+        
+        province = province || provinces[0];
+        var data = historyData[province] || {};
+        
+        var years = Object.keys(data).sort();
+        var avgTemps = years.map(function(year) {
+            var temps = data[year].temps || [];
+            return temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
+        });
+        
+        var baseline = avgTemps.length > 0 ? avgTemps.reduce((a, b) => a + b, 0) / avgTemps.length : 0;
+        var anomalies = avgTemps.map(x => Math.round((x - baseline) * 10) / 10);
+        
+        var option = {
+            title: {
+                text: '温度距平分析',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    var val = params[0].value;
+                    return params[0].name + '年: ' + (val > 0 ? '+' : '') + val + '°C';
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: years,
+                axisLabel: { color: '#fff', rotate: 45 }
+            },
+            yAxis: {
+                type: 'value',
+                name: '距平(°C)',
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            series: [{
+                type: 'bar',
+                data: anomalies,
+                itemStyle: {
+                    color: function(params) {
+                        return params.value >= 0 ? '#FF6B6B' : '#6BC5FF';
+                    }
+                }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 9. 季节雷达图
+    function renderSeasonalRadarChart() {
+        var chart = echarts.init(document.getElementById('seasonalRadarChart'));
+        
+        var radarData = seasonalData.radar_data || [];
+        
+        var option = {
+            title: {
+                text: '典型省份四季气温对比',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: {},
+            legend: {
+                data: radarData.map(x => x.name),
+                bottom: 0,
+                textStyle: { color: '#fff' }
+            },
+            radar: {
+                indicator: [
+                    { name: '春季', max: 35 },
+                    { name: '夏季', max: 35 },
+                    { name: '秋季', max: 35 },
+                    { name: '冬季', max: 35 }
+                ],
+                center: ['50%', '50%'],
+                radius: '60%',
+                axisName: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.3)' } },
+                splitArea: { areaStyle: { color: ['rgba(0, 198, 251, 0.1)', 'rgba(0, 198, 251, 0.05)'] } }
+            },
+            series: [{
+                type: 'radar',
+                data: radarData,
+                areaStyle: { opacity: 0.3 }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 10. 季节箱线图
+    function renderSeasonalBoxChart() {
+        var chart = echarts.init(document.getElementById('seasonalBoxChart'));
+        
+        var boxData = seasonalData.box_data || { spring: [], summer: [], autumn: [], winter: [] };
+        
+        var option = {
+            title: {
+                text: '各季节温度分布',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: { trigger: 'item' },
+            xAxis: {
+                type: 'category',
+                data: ['春季', '夏季', '秋季', '冬季'],
+                axisLabel: { color: '#fff' }
+            },
+            yAxis: {
+                type: 'value',
+                name: '温度(°C)',
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            series: [{
+                type: 'boxplot',
+                data: [
+                    boxData.spring,
+                    boxData.summer,
+                    boxData.autumn,
+                    boxData.winter
+                ],
+                itemStyle: {
+                    borderColor: '#00C6FB',
+                    color: 'rgba(0, 198, 251, 0.3)'
+                }
+            }]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 11. 季节堆叠图
+    function renderSeasonalStackChart() {
+        var chart = echarts.init(document.getElementById('seasonalStackChart'));
+        
+        var stackData = seasonalData.stack_data || {};
+        var provinceList = Object.keys(stackData).slice(0, 10);
+        
+        var option = {
+            title: {
+                text: '各省份四季平均温度对比',
+                textStyle: { color: '#00C6FB', fontSize: 16 },
+                left: 'center'
+            },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: {
+                data: ['春季', '夏季', '秋季', '冬季'],
+                bottom: 0,
+                textStyle: { color: '#fff' }
+            },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: provinceList,
+                axisLabel: { color: '#fff', rotate: 30 }
+            },
+            yAxis: {
+                type: 'value',
+                name: '温度(°C)',
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0,198,251,0.2)' } }
+            },
+            series: [
+                {
+                    name: '春季',
+                    type: 'bar',
+                    stack: 'total',
+                    data: provinceList.map(p => stackData[p] ? stackData[p].spring : 0),
+                    itemStyle: { color: '#00D9A5' }
+                },
+                {
+                    name: '夏季',
+                    type: 'bar',
+                    stack: 'total',
+                    data: provinceList.map(p => stackData[p] ? stackData[p].summer : 0),
+                    itemStyle: { color: '#FF6B6B' }
+                },
+                {
+                    name: '秋季',
+                    type: 'bar',
+                    stack: 'total',
+                    data: provinceList.map(p => stackData[p] ? stackData[p].autumn : 0),
+                    itemStyle: { color: '#FFD93D' }
+                },
+                {
+                    name: '冬季',
+                    type: 'bar',
+                    stack: 'total',
+                    data: provinceList.map(p => stackData[p] ? stackData[p].winter : 0),
+                    itemStyle: { color: '#6BC5FF' }
+                }
+            ]
+        };
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
+    }
+    
+    // 初始化省份选择下拉框
+    function initProvinceSelect() {
+        var select = document.getElementById('trendProvinceSelect');
+        if (select && provinces && provinces.length > 0) {
+            select.innerHTML = '';
+            provinces.forEach(function(p) {
+                var option = document.createElement('option');
+                option.value = p;
+                option.textContent = p;
+                select.appendChild(option);
+            });
+        }
+    }
+    
+    // 初始化所有图表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化省份下拉列表
+        initProvinceSelect();
+        
+        renderPrecipitationBarChart();
+        renderPrecipitationPieChart();
+        renderPrecipitationTrendChart();
+        renderExtremeRankTables();
+        renderExtremeHeatmapChart();
+        if (provinces && provinces.length > 0) {
+            renderYearlyTrendChart(provinces[0]);
+            renderDecadeCompareChart(provinces[0]);
+            renderAnomalyChart(provinces[0]);
+        }
+        renderSeasonalRadarChart();
+        renderSeasonalBoxChart();
+        renderSeasonalStackChart();
+    });
+</script>
+{% endblock %}

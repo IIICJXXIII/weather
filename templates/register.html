@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}注册 - NCDC 气象数据平台{% endblock %}
+
+{% block extra_head %}
+<style>
+    body.bg06 {
+        padding-top: 70px;
+    }
+    /* 覆盖 base.html 中的 main-content 样式 */
+    main.main-content {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-height: calc(100vh - 140px) !important;
+        padding: 40px 20px !important;
+    }
+    .auth-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 40px;
+        background: rgba(0, 30, 60, 0.95);
+        border-radius: 20px;
+        border: 1px solid rgba(0, 198, 251, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .auth-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .auth-header .icon {
+        font-size: 60px;
+        margin-bottom: 15px;
+    }
+    .auth-header h2 {
+        color: #00C6FB;
+        font-size: 28px;
+        margin: 0;
+    }
+    .auth-header p {
+        color: #fff;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        color: #00C6FB;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(0, 50, 100, 0.5);
+        border: 1px solid rgba(0, 198, 251, 0.3);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+    .form-group input:focus {
+        outline: none;
+        border-color: #00C6FB;
+        box-shadow: 0 0 10px rgba(0, 198, 251, 0.3);
+    }
+    .form-group input::placeholder {
+        color: #a0c4e8;
+    }
+    .form-group .hint {
+        font-size: 12px;
+        color: #00C6FB;
+        margin-top: 5px;
+    }
+    .btn-auth {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #00C6FB 0%, #7744ff 100%);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+    .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 198, 251, 0.4);
+    }
+    .auth-footer {
+        text-align: center;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 198, 251, 0.2);
+    }
+    .auth-footer p {
+        color: #fff;
+        margin: 0;
+    }
+    .auth-footer a {
+        color: #00C6FB;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+    .alert {
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+    .alert-error {
+        background: rgba(255, 107, 107, 0.2);
+        border: 1px solid rgba(255, 107, 107, 0.5);
+        color: #FF6B6B;
+    }
+    .password-strength {
+        height: 4px;
+        background: #333;
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    .password-strength-bar {
+        height: 100%;
+        width: 0%;
+        transition: all 0.3s ease;
+    }
+    .strength-weak { background: #FF6B6B; width: 33%; }
+    .strength-medium { background: #FFD93D; width: 66%; }
+    .strength-strong { background: #00D9A5; width: 100%; }
+    .terms {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        color: #fff;
+        font-size: 13px;
+        line-height: 1.5;
+        cursor: pointer;
+    }
+    .terms input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #00C6FB;
+        margin-top: 2px;
+    }
+    .terms a {
+        color: #00C6FB;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <div class="icon">🌟</div>
+        <h2>创建账号</h2>
+        <p>加入我们，探索全国气象数据</p>
+    </div>
+    
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'user_register' %}" id="registerForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">用户名 *</label>
+            <input type="text" id="username" name="username" placeholder="请输入用户名（3-20个字符）" 
+                   required minlength="3" maxlength="20" value="{{ form_data.username|default:'' }}">
+            <div class="hint">支持字母、数字和下划线</div>
+        </div>
+        <div class="form-group">
+            <label for="email">邮箱 *</label>
+            <input type="email" id="email" name="email" placeholder="请输入邮箱地址" 
+                   required value="{{ form_data.email|default:'' }}">
+        </div>
+        <div class="form-group">
+            <label for="password">密码 *</label>
+            <input type="password" id="password" name="password" placeholder="请输入密码（至少6位）" 
+                   required minlength="6">
+            <div class="password-strength">
+                <div class="password-strength-bar" id="strengthBar"></div>
+            </div>
+            <div class="hint">建议使用字母、数字和符号的组合</div>
+        </div>
+        <div class="form-group">
+            <label for="password2">确认密码 *</label>
+            <input type="password" id="password2" name="password2" placeholder="请再次输入密码" required>
+        </div>
+        <div class="form-group">
+            <label for="location">所在地（可选）</label>
+            <input type="text" id="location" name="location" placeholder="例如：北京" 
+                   value="{{ form_data.location|default:'' }}">
+        </div>
+        <div class="form-group">
+            <label class="terms">
+                <input type="checkbox" name="agree" required>
+                <span>我已阅读并同意 <a href="#">用户协议</a> 和 <a href="#">隐私政策</a></span>
+            </label>
+        </div>
+        <button type="submit" class="btn-auth">注 册</button>
+    </form>
+    
+    <div class="auth-footer">
+        <p>已有账号？<a href="{% url 'user_login' %}">立即登录</a></p>
+    </div>
+</div>
+
+<script>
+// 密码强度检测
+document.getElementById('password').addEventListener('input', function(e) {
+    var password = e.target.value;
+    var bar = document.getElementById('strengthBar');
+    bar.className = 'password-strength-bar';
+    
+    if (password.length === 0) {
+        bar.style.width = '0%';
+        return;
+    }
+    
+    var strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    if (strength <= 2) {
+        bar.classList.add('strength-weak');
+    } else if (strength <= 4) {
+        bar.classList.add('strength-medium');
+    } else {
+        bar.classList.add('strength-strong');
+    }
+});
+
+// 确认密码验证
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    var pwd1 = document.getElementById('password').value;
+    var pwd2 = document.getElementById('password2').value;
+    if (pwd1 !== pwd2) {
+        e.preventDefault();
+        alert('两次输入的密码不一致！');
+    }
+});
+</script>
+{% endblock %}

@@ -140,6 +140,26 @@ function map_chart(){
         ]
     };
     myChart.setOption(option);
+    
+    // 添加地图点击事件 - 下钻到省份详情页
+    myChart.on('click', function(params) {
+        if (params.name) {
+            // 跳转到省份详情页
+            window.location.href = '/province/' + encodeURIComponent(params.name) + '/';
+        }
+    });
+    
+    // 鼠标悬停样式变化，提示可点击
+    myChart.on('mouseover', function(params) {
+        if (params.name) {
+            document.body.style.cursor = 'pointer';
+        }
+    });
+    
+    myChart.on('mouseout', function() {
+        document.body.style.cursor = 'default';
+    });
+    
     window.addEventListener("resize", function() {
         myChart.resize();
     });

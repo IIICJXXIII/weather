@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}数据对比 - NCDC 气象数据平台{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* 页面居中布局 */
+    .compare-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    .compare-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .compare-content {
+        width: 100%;
+        max-width: 1000px;
+    }
+    .province-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 15px 0;
+        justify-content: center;
+    }
+    .province-checkbox {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    .province-checkbox input {
+        display: none;
+    }
+    .checkbox-label {
+        padding: 8px 16px;
+        background: rgba(0, 30, 60, 0.6);
+        border: 1px solid rgba(0, 198, 251, 0.3);
+        border-radius: 20px;
+        color: #fff;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+    .province-checkbox input:checked + .checkbox-label {
+        background: rgba(0, 198, 251, 0.3);
+        border-color: #00C6FB;
+        color: #00C6FB;
+    }
+    .checkbox-label:hover {
+        border-color: #00C6FB;
+    }
+    .ml-2 {
+        margin-left: 10px;
+    }
+    .btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="compare-container">
+    <div class="page-header">
+        <h1 class="page-title">⚖️ 多省份数据对比</h1>
+        <p class="page-subtitle">选择多个省份进行气象数据对比分析</p>
+    </div>
+
+    <!-- 选择表单 -->
+    <div class="compare-row">
+        <div class="compare-content">
+            <div class="panel">
+                <form method="get" id="compareForm">
+                    <h4 class="panel-title">选择对比省份（最多选择5个）</h4>
+                    <div class="province-selector">
+                        {% for p in provinces %}
+                        <label class="province-checkbox">
+                            <input type="checkbox" name="provinces" value="{{ p }}" 
+                                   {% if p in selected_provinces %}checked{% endif %}
+                                   onchange="checkLimit(this)">
+                            <span class="checkbox-label">{{ p }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="btn-group mt-3">
+                        <button type="submit" class="btn-primary-custom">
+                            📊 开始对比
+                        </button>
+                        <button type="button" class="btn-secondary-custom" onclick="clearSelection()">
+                            🗑️ 清除选择
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对比结果 -->
+    {% if compare_data %}
+    <div class="compare-row">
+        <div class="compare-content">
+            <!-- 温度对比图 -->
+            <div class="panel mb-4">
+                <h4 class="panel-title">🌡️ 各省份月度温度对比</h4>
+                <div class="chart-box" id="tempCompareChart"></div>
+            </div>
+            
+            <!-- 风速对比图 -->
+            <div class="panel">
+                <h4 class="panel-title">💨 各省份月度风速对比</h4>
+                <div class="chart-box" id="windCompareChart"></div>
+            </div>
+        </div>
+    </div>
+    {% elif selected_provinces %}
+    <div class="compare-row">
+        <div class="compare-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">📉</div>
+                <div class="empty-state-text">未找到对比数据</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="compare-row">
+        <div class="compare-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">☝️</div>
+                <div class="empty-state-text">请选择2-5个省份进行对比分析</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    var months = {{ months }};
+    var compareData = {{ compare_data }};
+    
+    // 限制最多选择5个
+    function checkLimit(checkbox) {
+        var checked = document.querySelectorAll('input[name="provinces"]:checked');
+        if (checked.length > 5) {
+            checkbox.checked = false;
+            alert('最多只能选择5个省份进行对比');
+        }
+    }
+    
+    // 清除选择
+    function clearSelection() {
+        document.querySelectorAll('input[name="provinces"]').forEach(function(cb) {
+            cb.checked = false;
+        });
+    }
+    
+    // 渲染对比图表
+    if (compareData && compareData.length > 0) {
+        // 颜色列表
+        var colors = ['#00C6FB', '#FF6B6B', '#00D9A5', '#FFD93D', '#A29BFE'];
+        
+        // 温度对比图
+        var tempChart = echarts.init(document.getElementById('tempCompareChart'));
+        var tempSeries = compareData.map(function(item, idx) {
+            return {
+                name: item.name,
+                type: 'line',
+                smooth: true,
+                data: item.temps,
+                lineStyle: { width: 3 },
+                itemStyle: { color: colors[idx % colors.length] }
+            };
+        });
+        
+        tempChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: {
+                data: compareData.map(function(item) { return item.name; }),
+                textStyle: { color: '#fff' },
+                bottom: 10
+            },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: months.map(function(m) { return m + '月'; }),
+                axisLabel: { color: '#fff' },
+                axisLine: { lineStyle: { color: '#00C6FB' } }
+            },
+            yAxis: {
+                type: 'value',
+                name: '温度(°C)',
+                nameTextStyle: { color: '#fff' },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0, 198, 251, 0.2)' } }
+            },
+            series: tempSeries
+        });
+        
+        // 风速对比图
+        var windChart = echarts.init(document.getElementById('windCompareChart'));
+        var windSeries = compareData.map(function(item, idx) {
+            return {
+                name: item.name,
+                type: 'bar',
+                data: item.winds,
+                itemStyle: { color: colors[idx % colors.length] }
+            };
+        });
+        
+        windChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: {
+                data: compareData.map(function(item) { return item.name; }),
+                textStyle: { color: '#fff' },
+                bottom: 10
+            },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: months.map(function(m) { return m + '月'; }),
+                axisLabel: { color: '#fff' },
+                axisLine: { lineStyle: { color: '#00C6FB' } }
+            },
+            yAxis: {
+                type: 'value',
+                name: '风速(m/s)',
+                nameTextStyle: { color: '#fff' },
+                axisLabel: { color: '#fff' },
+                splitLine: { lineStyle: { color: 'rgba(0, 198, 251, 0.2)' } }
+            },
+            series: windSeries
+        });
+        
+        // 响应式
+        window.addEventListener('resize', function() {
+            tempChart.resize();
+            windChart.resize();
+        });
+    }
+</script>
+{% endblock %}

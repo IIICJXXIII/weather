@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-_wvw5bvw%y1_du=1-y$9p#og53k!0%l3f6(^7ev@2!!c!zav!i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # 生产环境请指定具体域名或 IP
 
 
 # Application definition
@@ -131,14 +131,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
-STATICFILES_DIRS = (
-   # os.path.join(BASE_DIR, STATIC_URL),
-   ('css',os.path.join(STATIC_ROOT,'css').replace('\\','/') ),
-   ('js',os.path.join(STATIC_ROOT,'js').replace('\\','/') ),
-   ('img',os.path.join(STATIC_ROOT,'img').replace('\\','/') ),
-)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# 静态文件目录
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 

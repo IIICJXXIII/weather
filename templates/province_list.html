@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}省份列表 - NCDC 气象数据平台{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <h1 class="page-title">🗺️ 省份气象数据一览</h1>
+        <p class="page-subtitle">点击卡片查看省份详细气象数据</p>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="row mb-4">
+        <div class="col-md-6 offset-md-3">
+            <input type="text" class="form-control-custom w-100" id="searchInput" 
+                   placeholder="🔍 搜索省份名称..." onkeyup="filterProvinces()">
+        </div>
+    </div>
+
+    <!-- 统计概览 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value">{{ provinces|length }}</div>
+                <div class="stat-label">省份/地区总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="hottest">--</div>
+                <div class="stat-label">最热省份</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="coldest">--</div>
+                <div class="stat-label">最冷省份</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="windiest">--</div>
+                <div class="stat-label">风速最大省份</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 省份卡片列表 -->
+    <div class="row" id="provinceList">
+        {% for item in province_stats %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4 province-card" data-name="{{ item.name }}">
+            <a href="{% url 'province_detail' item.name %}" class="text-decoration-none">
+                <div class="panel province-item">
+                    <h4 class="province-name">{{ item.name }}</h4>
+                    <div class="province-stats">
+                        <div class="stat-row">
+                            <span class="stat-icon">🌡️</span>
+                            <span class="stat-text">年均温度: <strong>{{ item.avg_temp }}°C</strong></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">💨</span>
+                            <span class="stat-text">年均风速: <strong>{{ item.avg_wind }} m/s</strong></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">📈</span>
+                            <span class="stat-text">温度范围: <strong>{{ item.min_temp }}~{{ item.max_temp }}°C</strong></span>
+                        </div>
+                    </div>
+                    <div class="temp-indicator" style="--temp: {{ item.avg_temp }};">
+                        {% if item.avg_temp > 20 %}
+                        <span class="tag tag-danger">炎热</span>
+                        {% elif item.avg_temp > 10 %}
+                        <span class="tag tag-warning">温暖</span>
+                        {% elif item.avg_temp > 0 %}
+                        <span class="tag tag-success">凉爽</span>
+                        {% else %}
+                        <span class="tag tag-primary">寒冷</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .province-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        min-height: 180px;
+    }
+    .province-item:hover {
+        transform: translateY(-8px);
+        border-color: rgba(0, 198, 251, 0.5);
+        box-shadow: 0 15px 40px rgba(0, 198, 251, 0.2);
+    }
+    .province-name {
+        color: #00C6FB;
+        font-size: 20px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .province-stats {
+        margin-bottom: 10px;
+    }
+    .stat-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #fff;
+    }
+    .stat-icon {
+        margin-right: 8px;
+        font-size: 14px;
+    }
+    .stat-text strong {
+        color: #fff;
+    }
+    .temp-indicator {
+        text-align: center;
+        margin-top: 10px;
+    }
+</style>
+
+<script>
+    // 搜索过滤
+    function filterProvinces() {
+        var input = document.getElementById('searchInput').value.toLowerCase();
+        var cards = document.querySelectorAll('.province-card');
+        
+        cards.forEach(function(card) {
+            var name = card.getAttribute('data-name').toLowerCase();
+            if (name.includes(input)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // 计算统计数据
+    document.addEventListener('DOMContentLoaded', function() {
+        var stats = {{ province_stats|safe }};
+        if (stats && stats.length > 0) {
+            // 最热省份
+            var hottest = stats.reduce((a, b) => a.avg_temp > b.avg_temp ? a : b);
+            document.getElementById('hottest').textContent = hottest.name;
+            
+            // 最冷省份
+            var coldest = stats.reduce((a, b) => a.avg_temp < b.avg_temp ? a : b);
+            document.getElementById('coldest').textContent = coldest.name;
+            
+            // 风速最大省份
+            var windiest = stats.reduce((a, b) => a.avg_wind > b.avg_wind ? a : b);
+            document.getElementById('windiest').textContent = windiest.name;
+        }
+    });
+</script>
+{% endblock %}

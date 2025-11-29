@@ -4,6 +4,11 @@
 /*
  *常用背景色： #0f1c30 #0b0f34 (6,64,102) (29,45,57) (7,33,58) (8,13,28) (15,43,36)
  */
+:root {
+	--text-primary:#e6f1ff;
+	--text-secondary:#a8c6ff;
+	--text-link:#5dc2fe;
+}
 html, body {
 	width:100%;
 	height:100%;
@@ -15,6 +20,7 @@ html, body {
 	background-size:100% 100%;
 	overflow-x:hidden;
 	overflow-y:auto;
+	color:var(--text-primary);
 }
 body.bg06 {background-image:url("../img/bg06.png");}
 .header {
@@ -68,6 +74,69 @@ body.bg06 {background-image:url("../img/bg06.png");}
     font-size:10px;
     color:green;
 }
+
+/* typography & bootstrap overrides to keep text legible on dark background */
+body, p, li, span, label, dt, dd, th, td, legend, caption {
+	color:inherit;
+}
+a,
+a:visited {
+	color:var(--text-link);
+}
+a:hover,
+a:focus {
+	color:#ffffff;
+}
+small,
+.text-muted,
+.text-secondary,
+.text-default,
+.form-text,
+.help-block,
+.caption {
+	color:var(--text-secondary);
+}
+.table caption,
+legend,
+label,
+figcaption,
+blockquote,
+.panel,
+.panel-heading,
+.panel-body {
+	color:var(--text-primary);
+}
+.table>thead>tr>th,
+.table>tbody>tr>td,
+.table>tfoot>tr>td,
+.table>tfoot>tr>th {
+	color:var(--text-primary);
+	border-color:rgba(255,255,255,0.12);
+}
+input,
+select,
+textarea,
+.form-control {
+	color:#f4f8ff;
+	background-color:rgba(5,26,60,0.85);
+	border:1px solid rgba(93,194,254,0.35);
+	box-shadow:none;
+}
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus {
+	outline:none;
+	border-color:var(--text-link);
+	box-shadow:0 0 12px rgba(93,194,254,0.35);
+}
+input::placeholder,
+textarea::placeholder,
+.form-control::placeholder {
+	color:var(--text-secondary);
+	opacity:1;
+}
+
 
 /* tool */
 .fill-h {height:100%;min-height:100%;}

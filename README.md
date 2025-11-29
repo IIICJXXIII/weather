@@ -1,208 +1,585 @@
-# 大数据气象分析平台 - 项目答辩汇报
+# NCDC 全国气象数据分析与可视化平台
 
-## 1. 项目背景与架构 (Overview)
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Django-3.2%20LTS-green.svg" alt="Django">
+  <img src="https://img.shields.io/badge/ECharts-5.x-red.svg" alt="ECharts">
+  <img src="https://img.shields.io/badge/Hadoop-2.9.2-yellow.svg" alt="Hadoop">
+  <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License">
+</p>
 
-**项目名称**：基于 Hadoop 的全国气象数据分析与可视化平台
-
-**数据来源**：NCDC（美国国家气候数据中心）公开气象数据（1942年至今）。
-
-**核心目标**：
-- 搭建高可用的大数据集群环境。
-- 清洗并处理海量非结构化气象数据。
-- 多维度统计分析全国各省市气温、降水、风速等指标。
-- 利用机器学习算法预测未来气温趋势。
-- 通过 Web 大屏进行可视化展示。
-
-**技术架构**：
-- 基础设施：VMware + CentOS 7 (Master + 2 Slaves)
-- 存储层：HDFS（分布式文件系统）、MySQL（结果存储/元数据）
-- 计算层：YARN（资源调度）、MapReduce（离线计算）
-- 数仓层：Hive（数据仓库/SQL 分析）
-- 传输层：Sqoop（数据迁移）
-- 挖掘层：Python（Pandas、Statsmodels、SQLAlchemy）
-- 展示层：Django + ECharts + Bootstrap
+基于 Hadoop 大数据平台的全国气象数据分析与可视化系统，实现从数据采集、存储、计算、挖掘到 Web 可视化展示的全链路解决方案。
 
 ---
 
-## 2. 项目实施全流程 (Implementation)
-（建议配合架构图讲解）
+## 📋 目录
 
-### 阶段一：基础设施搭建
-- 搭建了 1 Master + 2 Slaves 的 Hadoop 完全分布式集群。
-- 配置了 SSH 免密登录、JDK 环境、Hadoop 核心参数（如 `core-site.xml`, `yarn-site.xml` 等）。
-- 亮点：成功解决了虚拟机网络配置（静态 IP + NAT）、防火墙策略配置等基础环境问题。
-
-### 阶段二：数据采集与清洗 (ETL)
-- 采集：将 NCDC 原始 `.gz` 压缩文件上传至 HDFS。
-- 清洗（MapReduce）：
-  - 编写 Java MapReduce 程序，从文件名中提取基站 ID。
-  - 清洗原始文本数据，处理缺失值，转换为 CSV 格式。
-- 技术挑战：处理了 22 年共 10,897 个小文件，解决了 MapReduce 本地模式内存溢出（OOM）问题。
-
-### 阶段三：数据仓库建设与分析
-- Hive 数仓分层设计：
-  - ODS 层：加载清洗后的原始数据。
-  - DIM 层：建立基站-城市映射表。
-  - DWD 层：构建全量宽表，关联地理位置信息。
-  - APP 层：统计各省月均气温、降水 Top10 城市、风速分布等指标。
-- 数据迁移：使用 Sqoop 将 Hive 分析结果表批量导出至 MySQL，打通数据流。
-
-### 阶段四：数据挖掘与预测
-- 利用 Python 连接 MySQL 读取历史数据。
-- 应用指数平滑法（Holt-Winters）和 ARIMA 模型对各省份气温进行时间序列预测。
-- 创新点：实现了模型的批量训练与自动化入库，对比不同算法的 RMSE（均方根误差）并择优使用。
-
-### 阶段五：可视化大屏开发
-- 搭建 Django Web 后端，开发数据 API 接口。
-- 前端集成 ECharts，实现：
-  - 动态地图：展示各省气温颜色分级与风速散点。
-  - 时间轴轮播：自动播放 1-12 月的数据变化。
-  - 多图表联动：包含柱状图、词云图、折线图（含预测曲线）和矩形树图。
+- [项目概述](#-项目概述)
+- [功能特性](#-功能特性)
+- [系统截图](#-系统截图)
+- [技术架构](#-技术架构)
+- [快速开始](#-快速开始)
+- [项目结构](#-项目结构)
+- [功能模块详解](#-功能模块详解)
+- [API 接口](#-api-接口)
+- [数据库设计](#-数据库设计)
+- [运维指南](#-运维指南)
+- [常见问题](#-常见问题)
+- [更新日志](#-更新日志)
 
 ---
 
-## 3. 核心技术难点与解决方案 (Challenges & Solutions)
-（这是答辩加分项，证明你真的动手做了）
+## 🌟 项目概述
 
-### 内存溢出（OOM）问题
-- 现象：在运行 MapReduce 清洗 1 万个文件时，Master 节点报错 `GC overhead limit exceeded`。
-- 解决：分析发现是 Local 模式导致单机负载过高。通过修改代码强制使用 YARN 集群模式（`mapreduce.framework.name=yarn`），并将 Master 内存升级至 16GB，成功利用集群算力解决问题。
+### 项目背景
 
-### 集群节点通信故障
-- 现象：YARN 任务卡在 `ACCEPTED` 状态，Active Nodes 为 0。
-- 解决：排查发现 `yarn-site.xml` 缺少 `yarn.resourcemanager.hostname` 配置，导致 Slave 无法连接 Master 的 8031 端口。通过修正配置并同步分发解决问题。
+本项目是一个完整的大数据气象分析平台，数据来源于 NCDC（美国国家气候数据中心）公开气象数据集 ISD-Lite，涵盖 2000-2022 年全国各省市的气温、降水、气压、风速等多维度气象指标。
 
-### 数据类型兼容性
-- 现象：Web 大屏不显示，前端报错 `Uncaught ReferenceError: np is not defined`。
-- 解决：发现是 Pandas 读取的数据类型（`np.int64`）无法被 JS 识别。在 Django 后端增加了强制类型转换逻辑，将数据转为原生 Python 类型后再序列化为 JSON。
+### 核心目标
 
-### 软件版本冲突
-- 现象：Django 连接 MySQL 5.7 报错。
-- 解决：定位到新版 Django 不支持旧版 MySQL，通过降级 Django 到 3.2 LTS 版本解决兼容性问题。
+- 🏗️ 搭建高可用的 Hadoop 大数据集群环境（1 Master + 2 Slaves）
+- 🧹 清洗并处理海量非结构化气象数据（10,897 个原始文件）
+- 📊 多维度统计分析全国各省市气象指标
+- 🔮 利用时序预测算法（Holt-Winters / ARIMA）预测气温趋势
+- 🖥️ 通过 Web 大屏进行可视化交互展示
 
 ---
 
-## 4. 项目成果展示 (Project Demo)
-（此时可以打开浏览器演示）
+## ✨ 功能特性
 
-- 数据闭环：展示 MySQL 数据库中 `province_temp_all` 表，证明预测数据已成功回写。
-- 可视化大屏：
-  - 展示地图随时间轴自动轮播的效果。
-  - 展示包含“历史数据”和“预测数据”的折线图，体现数据挖掘成果。
-  - 展示交互功能（鼠标悬停显示具体数值）。
+### 🗺️ 数据可视化大屏
+- **交互式中国地图**：气温颜色分级 + 风速散点叠加
+- **时间轴轮播**：自动播放 1-12 月数据变化
+- **多图表联动**：柱状图、词云图、折线图（含预测曲线）、矩形树图
 
----
+### 📍 省份数据功能
+- **省份列表**：展示全国所有省份气象概览，支持按温度排序
+- **省份详情**：包含统计卡片、温度趋势图、历史数据、风向玫瑰图、7天预报
+- **历史查询**：按省份和月份查询历史气温、风速、气压数据
+- **数据对比**：多省份数据同屏对比分析
 
-## 5. 总结与展望
+### 📈 数据分析模块
+- **统计卡片**：全国年均温度、极端高温/低温、最大降水城市、最大风速省份
+- **热力图**：省份-月份气温热力分布
+- **极端天气排行**：高温/低温 Top 10
+- **季节分析**：四季堆叠图、雷达图、箱线图
 
-**总结**：本项目打通了从数据采集、存储、计算、挖掘到展示的全链路，构建了一套完整的大数据处理系统。
-
-**展望**：
-- 引入 Spark 替代 MapReduce 提升计算速度。
-- 引入 Kafka 实现实时气象数据处理。
-- 优化前端界面，适配移动端展示。
-
----
-
-## 6. 运维与常见故障排查 (Environment, Network, Cluster & Dev Troubleshooting)
-
-下面将你提出的运维类问题按四类汇总，包含现象、原因与解决方案（都以实战经验为主）。
-
-### 🛑 第一类：基础设施与网络配置 (Environment & Network)
-
-1. 虚拟机网卡配置缺失  
-- 现象：执行 `systemctl restart network` 失败，`ip addr` 只显示 `lo` 和 `ens33`，缺少外网网卡。  
-- 原因：VMware 中未添加第二块 NAT 模式网卡（应为 `ens36`）。  
-- 解决：关机 → 编辑虚拟机设置 → 添加网络适配器 → 选择 NAT 模式。
-
-2. Windows 无法访问 Hadoop Web 页面  
-- 现象：Windows 浏览器访问 `192.168.56.101:50070` 超时，但虚拟机内网互通。  
-- 原因：Windows 的虚拟网卡 VMnet1 的 IP（如 `192.168.146.1`）与虚拟机集群（`192.168.56.x`）不在同一网段。  
-- 解决：修改 Windows 网络适配器 VMnet1 的 IPv4 设置，固定为 `192.168.56.1`。
-
-3. 集群内网通信失败（Hosts 配置错误）  
-- 现象：Master ping Slave 失败，显示 100% packet loss。  
-- 原因：`/etc/hosts` 中 Master 的 IP 写错（如 `192.168.15.101`，应为 `192.168.56.101`）。  
-- 解决：修正 `hosts` 文件并重新分发到所有节点。
+### 👤 用户系统
+- **注册/登录**：完整的用户认证系统
+- **个人中心**：查看收藏、浏览历史、账号统计
+- **收藏功能**：收藏感兴趣的省份，支持备注
+- **浏览历史**：自动记录浏览过的省份
+- **账号设置**：修改个人信息、修改密码
 
 ---
 
-### 🛑 第二类：Hadoop 集群运维 (Cluster Operations)
+## 🛠️ 技术架构
 
-4. Slave 节点缺少环境  
-- 现象：在 Slave 执行 `java -version` 报 `command not found`。  
-- 原因：只在 Master 解压 JDK/Hadoop，忘记分发到从节点。  
-- 解决：使用 `scp` 或编写分发脚本将 `/home/java`、`/home/hadoop` 及环境配置（如 `/etc/profile`）同步到所有 Slave。
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        展示层 (Presentation)                      │
+│     Django 3.2 + ECharts 5.x + Bootstrap + 响应式设计              │
+├─────────────────────────────────────────────────────────────────┤
+│                        应用层 (Application)                       │
+│          Django Views + REST API + 用户认证 + 会话管理              │
+├─────────────────────────────────────────────────────────────────┤
+│                        数据层 (Data Access)                       │
+│              SQLAlchemy + Pandas + PyMySQL                       │
+├─────────────────────────────────────────────────────────────────┤
+│                        存储层 (Storage)                           │
+│        MySQL (结果数据) │ SQLite (用户数据) │ HDFS (原始数据)        │
+├─────────────────────────────────────────────────────────────────┤
+│                        计算层 (Computing)                         │
+│              YARN + MapReduce + Hive + Sqoop                     │
+├─────────────────────────────────────────────────────────────────┤
+│                        基础设施 (Infrastructure)                   │
+│          VMware + CentOS 7 (1 Master + 2 Slaves)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-5. Hive 连接拒绝 (Connection Refused)  
-- 现象：启动 Hive 报错 `java.net.ConnectException: Call From ... to master:9000 failed`。  
-- 原因：Linux 重启后 HDFS/YARN 未自动启动，Hive 无法连接未启动的 HDFS。  
-- 解决：重启机器后先执行 `start-all.sh` 启动 Hadoop 集群（或用 `sbin/start-dfs.sh`、`sbin/start-yarn.sh` 分步启动）。
+### 技术栈
 
-6. HDFS 安全模式锁定 (Safe Mode)  
-- 现象：执行 `hdfs dfs -rm` 报错 Name node is in safe mode。  
-- 原因：HDFS 刚启动或数据块复制率不足时进入只读安全模式。  
-- 解决：执行 `hdfs dfsadmin -safemode leave` 强制退出安全模式，或等待系统完成检查。
-
----
-
-### 🛑 第三类：MapReduce 开发与性能调优 (Core Challenges)
-
-7. 内存溢出 (OOM: GC overhead limit exceeded) 🔥（最核心难点）  
-- 现象：运行 MapReduce 清洗 22 年气象数据（约 1.1 万个文件）时程序崩溃报错。  
-- 原因：
-  - 代码在 Local 模式下运行，Master 节点（仅 4GB）无法同时承受大量 Map 任务对象。
-  - 小文件问题使切片数量极多。  
-- 解决（组合拳）：
-  - 升级硬件：Master 内存从 4GB 扩容到 16GB。
-  - 切换架构：在代码中 `conf.set("mapreduce.framework.name", "yarn")` 强制使用 YARN 集群模式。
-  - 资源调优：调整 `yarn-site.xml` 中 `yarn.nodemanager.resource.memory-mb`（示例从默认 4096 提高到 6144），并合理设置 Map/Reduce 内存参数。
-
-8. 集群节点“失联” (Active Nodes = 0)  
-- 现象：YARN 任务提交后卡在 `ACCEPTED`，Web 界面 Active Nodes = 0，日志显示 Slave 连接 `0.0.0.0:8031` 失败。  
-- 原因：`yarn-site.xml` 缺少 `yarn.resourcemanager.hostname` 配置，且防火墙/iptables 未关闭。  
-- 解决：补充 `yarn.resourcemanager.hostname`（如 `master`），同步分发到所有节点，关闭防火墙并重启 YARN 服务。
-
-9. 代码逻辑冲突 (ClassCastException)  
-- 现象：使用 `CombineTextInputFormat` 优化小文件时报 `ClassCastException`。  
-- 原因：CombineTextInputFormat 生成的切片类型与 Mapper 中强制将 InputSplit 转为 `FileSplit` 不兼容，导致无法获取文件名。  
-- 解决：放弃合并切片策略，利用 YARN 集群算力承受大量切片；同时修正 Mapper 获取文件名的 API（使用通用的 `InputSplit` 判断和适配逻辑）。
-
-10. Windows 本地开发环境缺失  
-- 现象：在 Windows IDEA 运行时报 `HADOOP_HOME and hadoop.home.dir are unset`。  
-- 原因：Windows 本地运行 Hadoop 需要 `winutils.exe` 等，本地环境配置复杂。  
-- 解决：将项目打包为 JAR，上传至 Linux Master 节点并直接 `hadoop jar ...` 提交运行，放弃在 Windows 上直接运行集群相关作业。
+| 层级 | 技术选型 | 版本 |
+|------|---------|------|
+| 前端 | ECharts, Bootstrap, D3.js, WordCloud | 5.x, 3.x |
+| 后端 | Django, Python | 3.2.25 LTS, 3.8+ |
+| 数据处理 | Pandas, NumPy, SQLAlchemy | 2.3.3, 2.0.2, 2.0.44 |
+| 数据库 | MySQL (气象), SQLite (用户) | 5.7+, 内置 |
+| 大数据 | Hadoop, Hive, Sqoop | 2.9.2, 2.1.0, 1.4.6 |
+| 部署 | VMware, CentOS, Nginx | 7.x |
 
 ---
 
-### 🛑 第四类：Web 可视化与全链路 (Visualization & Integration)
+## 🚀 快速开始
 
-11. 前端数据类型报错 (np is not defined)  
-- 现象：大屏页面白屏，控制台报 `Uncaught ReferenceError: np is not defined`。  
-- 原因：Pandas 使用 `numpy` 类型（如 `np.int64`、`np.float64`），前端 JS 无法识别。  
-- 解决：在 Django 后端（views.py）遍历数据并强制将数值类型转换为 Python 原生 `int()` 或 `float()`，然后再序列化为 JSON。
+### 环境要求
 
-12. JS 文件中文乱码  
-- 现象：时间轴组件不显示，JS 文件中中文注释或变量出现乱码。  
-- 原因：Windows 编辑时使用 GBK 编码，浏览器默认 UTF-8 导致乱码。  
-- 解决：在 IDE 中将文件编码转换为 UTF-8 并保存，或在 HTTP header 指定 `Content-Type: text/javascript; charset=utf-8`。
+- Python 3.8+
+- MySQL 5.7+ (用于气象数据)
+- 已配置的 Hadoop 集群 (可选，用于数据处理)
 
-13. MySQL 权限拒绝 (Access Denied)  
-- 现象：Sqoop 导出时报 `Access denied for user 'root'@'master'`。  
-- 原因：MySQL 用户权限未明确授予来自 master 的访问，或密码策略/主机解析导致授权失败。  
-- 解决：在 MySQL 中显式授予 `root@'master'` 权限，或使用 `%` 并确保主机名解析一致；必要时调整 MySQL 密码策略。
+### 安装步骤
 
-14. Django 版本不兼容  
-- 现象：启动 Django 报 `MySQL 8.0 or later is required`。  
-- 原因：安装了 Django 新版本（4.x/5.x），与 CentOS7 上的 MySQL 5.7 不兼容。  
-- 解决：降级 Django 至 3.2 LTS（与 MySQL 5.7 兼容），或升级数据库到受支持的版本。
+```bash
+# 1. 克隆项目
+git clone https://github.com/IIICJXXIII/weather.git
+cd weather
+
+# 2. 创建虚拟环境
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 配置数据库连接
+# 编辑 china_weather/views.py 中的数据库连接字符串
+# engine = create_engine('mysql+pymysql://用户名:密码@IP:端口/数据库名')
+
+# 5. 初始化本地数据库（用户系统）
+python manage.py makemigrations
+python manage.py migrate
+
+# 6. 创建超级用户（可选）
+python manage.py createsuperuser
+
+# 7. 启动开发服务器
+python manage.py runserver
+```
+
+### 访问地址
+
+| 页面 | 地址 |
+|------|------|
+| 首页大屏 | http://127.0.0.1:8000/ |
+| 省份列表 | http://127.0.0.1:8000/province/ |
+| 历史查询 | http://127.0.0.1:8000/history/ |
+| 数据对比 | http://127.0.0.1:8000/compare/ |
+| 数据分析 | http://127.0.0.1:8000/analysis/ |
+| 关于项目 | http://127.0.0.1:8000/about/ |
+| 用户登录 | http://127.0.0.1:8000/login/ |
+| 用户注册 | http://127.0.0.1:8000/register/ |
+| 个人中心 | http://127.0.0.1:8000/profile/ |
+| 管理后台 | http://127.0.0.1:8000/admin/ |
 
 ---
 
-（附）常用命令速查：
-- 启动 HDFS/YARN：`sbin/start-dfs.sh`、`sbin/start-yarn.sh` 或 `sbin/start-all.sh`
-- 退出 HDFS 安全模式：`hdfs dfsadmin -safemode leave`
-- 查看节点状态：HDFS Web UI（NameNode:50070/9870）、YARN ResourceManager（8088）
-- 分发文件：`scp -r /path/to/hadoop slave:/path/to/` 或用 `rsync`/配置管理工具
+## 📁 项目结构
+
+```
+weather/
+├── china_weather/              # 主应用目录
+│   ├── models.py              # 数据模型（用户收藏、浏览历史等）
+│   ├── views.py               # 视图函数（所有业务逻辑）
+│   ├── admin.py               # Django Admin 配置
+│   └── migrations/            # 数据库迁移文件
+│
+├── weather/                    # Django 项目配置
+│   ├── settings.py            # 项目设置
+│   ├── urls.py                # URL 路由配置
+│   └── wsgi.py                # WSGI 入口
+│
+├── templates/                  # HTML 模板
+│   ├── base.html              # 基础模板（导航、页脚）
+│   ├── index.html             # 首页大屏
+│   ├── province_list.html     # 省份列表
+│   ├── province_detail.html   # 省份详情
+│   ├── history_query.html     # 历史查询
+│   ├── compare.html           # 数据对比
+│   ├── analysis.html          # 数据分析
+│   ├── about.html             # 关于项目
+│   ├── login.html             # 用户登录
+│   ├── register.html          # 用户注册
+│   ├── profile.html           # 个人中心
+│   └── settings.html          # 账号设置
+│
+├── static/                     # 静态资源
+│   ├── css/                   # 样式文件
+│   │   ├── app.css           # 主样式
+│   │   ├── nav.css           # 导航样式
+│   │   └── bootstrap.min.css # Bootstrap
+│   ├── js/                    # JavaScript
+│   │   ├── echarts.min.js    # ECharts 图表库
+│   │   ├── china.js          # 中国地图数据
+│   │   ├── map_chart.js      # 地图图表
+│   │   ├── line_chart.js     # 折线图
+│   │   ├── bar_chart.js      # 柱状图
+│   │   ├── tree_chart.js     # 矩形树图
+│   │   ├── word_chart.js     # 词云图
+│   │   ├── timeline.js       # 时间轴控制
+│   │   └── total_control.js  # 整体控制
+│   └── data/                  # CSV 数据文件
+│
+├── db.sqlite3                  # SQLite 数据库（用户数据）
+├── manage.py                   # Django 管理脚本
+├── requirements.txt            # Python 依赖
+└── README.md                   # 项目文档
+```
 
 ---
+
+## 📚 功能模块详解
+
+### 1. 首页数据大屏 (`/`)
+
+展示 2022 年全国各省份气象情况的可视化大屏：
+
+| 图表 | 说明 |
+|------|------|
+| 中国地图 | 气温颜色分级 + 风速散点图 |
+| 时间轴 | 1-12 月自动轮播 |
+| 折线图 | 各省份月均气温 + 预测曲线 |
+| 柱状图 | 降水量 Top 10 城市 |
+| 词云图 | 各城市气温分布 |
+| 矩形树图 | 各省份气压分布 |
+
+### 2. 省份列表 (`/province/`)
+
+- 展示全国所有省份的气象概览
+- 显示年均温度、平均风速、最高/最低温度
+- 按年均温度排序，快速定位
+
+### 3. 省份详情 (`/province/<省份名>/`)
+
+- **统计卡片**：平均气温、最高/最低温、全国排名、平均风速、平均气压、年降水量
+- **月度趋势图**：12 个月的温度变化曲线
+- **历史数据图**：多年平均温度趋势
+- **风向玫瑰图**：8 个方向的风频分布
+- **7 天预报**：模拟天气预报展示
+- **收藏功能**：登录用户可收藏省份
+
+### 4. 历史查询 (`/history/`)
+
+- 选择省份和月份进行查询
+- 返回该省份该月的气温、风速、气压数据
+
+### 5. 数据对比 (`/compare/`)
+
+- 多选省份进行同屏对比
+- 对比各省份 12 个月的温度和风速变化
+
+### 6. 数据分析 (`/analysis/`)
+
+- **统计概览**：全国平均温度、极端高/低温记录、最大降水城市、最大风速省份
+- **热力图**：省份-月份气温分布
+- **极端天气排行**：高温/低温 Top 10
+- **季节分析**：四季堆叠图、雷达图、箱线图
+
+### 7. 用户系统
+
+| 功能 | 路由 | 说明 |
+|------|------|------|
+| 登录 | `/login/` | 用户名密码登录，支持记住我 |
+| 注册 | `/register/` | 新用户注册，含表单验证 |
+| 登出 | `/logout/` | 安全退出 |
+| 个人中心 | `/profile/` | 收藏列表、浏览历史、账号统计 |
+| 账号设置 | `/settings/` | 修改信息、修改密码 |
+
+---
+
+## 🔌 API 接口
+
+### 收藏相关
+
+```http
+# 切换收藏状态（推荐使用）
+POST /api/toggle_favorite/
+Content-Type: application/json
+X-CSRFToken: <token>
+
+Request:  { "province": "北京" }
+Response: { "success": true, "is_favorite": true, "message": "收藏成功" }
+Response: { "success": true, "is_favorite": false, "message": "已取消收藏" }
+Response: { "success": false, "message": "请先登录", "redirect": "/login/..." }
+
+# 添加收藏
+POST /api/favorite/add/
+Request:  { "province": "北京", "note": "首都" }
+Response: { "success": true, "message": "收藏成功" }
+
+# 取消收藏
+POST /api/favorite/remove/
+Request:  { "province": "北京" } 或 { "id": 1 }
+Response: { "success": true, "message": "已取消收藏" }
+
+# 检查收藏状态
+GET /api/favorite/check/?province=北京
+Response: { "is_favorite": true, "logged_in": true }
+```
+
+---
+
+## 💾 数据库设计
+
+### 气象数据表（MySQL）
+
+| 表名 | 说明 |
+|------|------|
+| `china_map` | 各省份月度气温、风速数据 |
+| `province_temp` | 各省份月度气温 + 预测值 |
+| `province_pressure` | 各省份月度气压 |
+| `city_temp` | 各城市月度气温 |
+| `city_precipitation_top10` | 降水量 Top 10 城市 |
+| `province_temp_all` | 历史年度气温数据 |
+
+### 用户数据表（SQLite）
+
+| 表名 | 说明 |
+|------|------|
+| `auth_user` | Django 内置用户表 |
+| `user_profile` | 用户扩展信息（头像、位置、简介） |
+| `user_favorite` | 用户收藏（用户-省份-备注） |
+| `browse_history` | 浏览历史记录 |
+
+---
+
+## 🔧 运维指南
+
+### Django 配置说明
+
+```python
+# weather/settings.py 主要配置
+
+# 数据库配置（用户数据使用 SQLite）
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# 静态文件
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# 模板目录
+TEMPLATES = [{'DIRS': [BASE_DIR / 'templates']}]
+```
+
+### 气象数据库连接
+
+```python
+# china_weather/views.py
+# 修改为你的 MySQL 连接信息
+engine = create_engine('mysql+pymysql://root:password@192.168.56.101:3306/china_all')
+```
+
+### 生产环境部署
+
+```bash
+# 1. 收集静态文件
+python manage.py collectstatic
+
+# 2. 使用 Gunicorn 启动
+gunicorn weather.wsgi:application -b 0.0.0.0:8000
+
+# 3. 配置 Nginx 反向代理
+# /etc/nginx/sites-available/weather
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location /static/ {
+        alias /path/to/weather/static/;
+    }
+    
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+    }
+}
+```
+
+---
+
+## ❓ 常见问题
+
+### 1. 启动时报数据库连接错误
+
+**现象**：`Can't connect to MySQL server`
+
+**解决**：
+- 检查 MySQL 服务是否启动
+- 检查 `views.py` 中的连接字符串配置
+- 确保 MySQL 用户有远程访问权限
+
+### 2. 页面数据不显示
+
+**现象**：图表空白或报 `np is not defined`
+
+**解决**：数据类型问题已在代码中修复，确保使用最新版本的 `views.py`
+
+### 3. Django 版本兼容
+
+**现象**：`MySQL 8.0 or later is required`
+
+**解决**：本项目使用 Django 3.2 LTS，兼容 MySQL 5.7
+
+### 4. 静态文件 404
+
+**现象**：CSS/JS 文件加载失败
+
+**解决**：
+```python
+# settings.py 确保配置正确
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+```
+
+### 5. 页面样式不生效
+
+**现象**：CSS 样式没有正确应用
+
+**解决**：检查模板中的 block 名称，必须使用 `extra_head` 而非 `extra_css`：
+```html
+<!-- 正确 -->
+{% block extra_head %}
+<style>...</style>
+{% endblock %}
+
+<!-- 错误 -->
+{% block extra_css %}...{% endblock %}
+```
+
+### 6. 登录注册功能异常
+
+**现象**：登录后跳转到首页而非个人中心，或注册后无法登录
+
+**解决**：确保 `views.py` 中使用正确的 auth 函数名：
+```python
+# 正确：导入时重命名避免与视图函数冲突
+from django.contrib.auth import login as auth_login, logout as auth_logout
+
+# 调用时使用重命名后的函数
+auth_login(request, user)
+auth_logout(request)
+```
+
+### 7. 收藏功能 404
+
+**现象**：`POST /api/toggle_favorite/ 404`
+
+**解决**：确保 `urls.py` 中添加了路由：
+```python
+path('api/toggle_favorite/', views.toggle_favorite, name='toggle_favorite'),
+```
+
+### 8. 数据分析页面下拉框显示异常
+
+**现象**：省份选择框显示 `[` 字符或乱码
+
+**解决**：使用 JavaScript 动态填充 select 选项，而非 Django 模板循环 JSON 字符串
+
+---
+
+## 📄 依赖清单
+
+```
+Django==3.2.25          # Web 框架
+pandas==2.3.3           # 数据处理
+numpy==2.0.2            # 数值计算
+SQLAlchemy==2.0.44      # ORM
+PyMySQL==1.1.2          # MySQL 驱动
+```
+
+---
+
+## 📝 更新日志
+
+### v2.1.0 (2025-11-28)
+- 🐛 修复登录注册功能（解决 `login` 函数命名冲突）
+- 🐛 修复收藏功能（添加 `toggle_favorite` API 端点）
+- 🐛 修复数据分析页面省份下拉框显示问题
+- 🐛 修复所有页面样式不生效问题（`extra_css` → `extra_head`）
+- 🎨 优化历史查询、数据对比、关于项目页面居中布局
+- 🎨 优化 Tab 按钮和 Filter-bar 样式显示
+
+### v2.0.0 (2025-11)
+- ✨ 新增完整用户系统（注册/登录/个人中心）
+- ✨ 新增省份收藏功能
+- ✨ 新增浏览历史记录
+- ✨ 新增省份详情页（统计卡片、多图表、7天预报）
+- ✨ 新增数据分析页（热力图、极端天气、季节分析）
+- ✨ 新增历史查询和数据对比功能
+- 🎨 全新响应式导航设计
+- 🎨 统一的深色主题 UI
+- 🐛 修复数据类型兼容问题
+
+### v1.0.0 (2024)
+- 🎉 初始版本发布
+- 📊 数据可视化大屏
+- 🗺️ 中国地图 + 时间轴轮播
+
+---
+
+## 📧 联系方式
+
+如有问题或建议，欢迎提交 Issue 或 Pull Request。
+
+---
+
+## 📖 附录：大数据平台搭建与运维
+
+<details>
+<summary>点击展开 Hadoop 集群搭建与故障排查指南</summary>
+
+### 项目实施全流程
+
+#### 阶段一：基础设施搭建
+- 搭建了 1 Master + 2 Slaves 的 Hadoop 完全分布式集群
+- 配置了 SSH 免密登录、JDK 环境、Hadoop 核心参数（`core-site.xml`, `yarn-site.xml` 等）
+- 解决了虚拟机网络配置（静态 IP + NAT）、防火墙策略等问题
+
+#### 阶段二：数据采集与清洗 (ETL)
+- 采集：将 NCDC 原始 `.gz` 压缩文件上传至 HDFS
+- 清洗：编写 Java MapReduce 程序处理原始数据
+- 技术挑战：处理了 22 年共 10,897 个小文件
+
+#### 阶段三：数据仓库建设
+- Hive 数仓分层：ODS → DIM → DWD → APP
+- 使用 Sqoop 将分析结果导出至 MySQL
+
+#### 阶段四：数据挖掘与预测
+- 应用 Holt-Winters 和 ARIMA 模型预测气温
+- 实现模型批量训练与自动化入库
+
+### 常见故障排查
+
+#### 基础设施与网络
+1. **虚拟机网卡配置缺失**：添加 NAT 模式网卡
+2. **Windows 无法访问 Hadoop Web**：修改 VMnet1 网段配置
+3. **集群内网通信失败**：检查 `/etc/hosts` 配置
+
+#### Hadoop 集群运维
+4. **Slave 节点缺少环境**：使用 `scp` 分发 JDK/Hadoop
+5. **Hive 连接拒绝**：重启后先执行 `start-all.sh`
+6. **HDFS 安全模式**：执行 `hdfs dfsadmin -safemode leave`
+
+#### MapReduce 开发
+7. **OOM 内存溢出**：切换 YARN 模式 + 升级内存
+8. **Active Nodes = 0**：补充 `yarn.resourcemanager.hostname` 配置
+9. **ClassCastException**：避免使用 CombineTextInputFormat
+
+#### Web 可视化
+10. **np is not defined**：强制转换 numpy 类型为 Python 原生类型
+11. **JS 中文乱码**：转换文件编码为 UTF-8
+12. **MySQL 权限拒绝**：授予远程访问权限
+13. **Django 版本不兼容**：使用 Django 3.2 LTS
+
+### 常用命令速查
+```bash
+# 启动集群
+sbin/start-dfs.sh
+sbin/start-yarn.sh
+
+# 退出安全模式
+hdfs dfsadmin -safemode leave
+
+# 查看节点状态
+# HDFS: http://master:50070
+# YARN: http://master:8088
+```
+
+</details>

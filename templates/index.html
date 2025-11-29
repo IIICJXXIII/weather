@@ -9,15 +9,90 @@
 		<title>2022年各省气象情况</title>
 		<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
 		<link rel="stylesheet" href="{% static 'css/app.css' %}" />
+		<link rel="stylesheet" href="{% static 'css/nav.css' %}" />
 		<script src="{% static 'js/echarts.min.js' %}"></script>
 		<script src="{% static 'js/china.js' %}"></script>
 		<script src="{% static 'js/wordcount.min.js' %}"></script>
 		<script src="{% static 'js/d3.min.js' %}"></script>
-
+		<style>
+			/* 首页特殊导航按钮样式 */
+			.home-nav-toggle {
+				position: fixed;
+				top: 15px;
+				right: 15px;
+				z-index: 2000;
+				background: linear-gradient(135deg, rgba(0, 198, 251, 0.8), rgba(119, 68, 255, 0.8));
+				border: none;
+				color: white;
+				width: 45px;
+				height: 45px;
+				border-radius: 50%;
+				cursor: pointer;
+				font-size: 20px;
+				box-shadow: 0 4px 15px rgba(0, 198, 251, 0.4);
+				transition: all 0.3s ease;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.home-nav-toggle:hover {
+				transform: scale(1.1);
+				box-shadow: 0 6px 20px rgba(0, 198, 251, 0.6);
+			}
+			.home-nav-panel {
+				position: fixed;
+				top: 70px;
+				right: 15px;
+				z-index: 1999;
+				background: rgba(0, 30, 60, 0.95);
+				border: 1px solid rgba(0, 198, 251, 0.5);
+				border-radius: 10px;
+				padding: 10px 0;
+				min-width: 160px;
+				display: none;
+				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+			}
+			.home-nav-panel.show {
+				display: block;
+				animation: fadeIn 0.2s ease;
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(-10px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			.home-nav-panel a {
+				display: block;
+				padding: 10px 20px;
+				color: #00C6FB;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.home-nav-panel a:hover {
+				background: rgba(0, 198, 251, 0.2);
+				padding-left: 25px;
+			}
+			.home-nav-panel a.active {
+				background: rgba(0, 198, 251, 0.3);
+				border-left: 3px solid #00C6FB;
+			}
+		</style>
 		
 	</head>
 	
 	<body class="bg06">
+		<!-- 导航菜单按钮 -->
+		<button class="home-nav-toggle" onclick="toggleNavPanel()" title="导航菜单">
+			☰
+		</button>
+		<div class="home-nav-panel" id="navPanel">
+			<a href="/" class="active">🏠 首页</a>
+			<a href="/province/">📋 省份列表</a>
+			<a href="/history/">📅 历史查询</a>
+			<a href="/compare/">📊 数据对比</a>
+			<a href="/analysis/">📈 数据分析</a>
+			<a href="/about/">ℹ️ 关于项目</a>
+		</div>
+		
 		<header class="header">
 			<h3>2022年各省份气象情况</h3>
 		</header>
@@ -87,6 +162,21 @@
 		<script src="{% static 'js/word_chart.js' %}"></script>
 		<script src="{% static 'js/bar_chart.js' %}"></script>
 		<script src="{% static 'js/total_control.js' %}"></script>
+		<script>
+			// 导航面板切换
+			function toggleNavPanel() {
+				var panel = document.getElementById('navPanel');
+				panel.classList.toggle('show');
+			}
+			// 点击其他区域关闭导航面板
+			document.addEventListener('click', function(e) {
+				var panel = document.getElementById('navPanel');
+				var toggle = document.querySelector('.home-nav-toggle');
+				if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+					panel.classList.remove('show');
+				}
+			});
+		</script>
 
 	</body>
 </html>

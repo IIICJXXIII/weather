@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}账号设置 - NCDC 气象数据平台{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        padding-top: 70px;
+    }
+    .settings-container {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .page-title {
+        color: #00C6FB;
+        font-size: 28px;
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .settings-card {
+        background: rgba(0, 30, 60, 0.8);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0, 198, 251, 0.3);
+    }
+    .settings-card h3 {
+        color: #00C6FB;
+        font-size: 18px;
+        margin: 0 0 20px 0;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(0, 198, 251, 0.2);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        color: #00C6FB;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        background: rgba(0, 50, 100, 0.5);
+        border: 1px solid rgba(0, 198, 251, 0.3);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #00C6FB;
+        box-shadow: 0 0 10px rgba(0, 198, 251, 0.3);
+    }
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #00C6FB 0%, #7744ff 100%);
+        color: white;
+    }
+    .btn-danger {
+        background: rgba(255, 107, 107, 0.2);
+        border: 1px solid rgba(255, 107, 107, 0.5);
+        color: #FF6B6B;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 198, 251, 0.3);
+    }
+    .btn-danger:hover {
+        background: #FF6B6B;
+        color: white;
+    }
+    .alert {
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+    .alert-success {
+        background: rgba(0, 217, 165, 0.2);
+        border: 1px solid rgba(0, 217, 165, 0.5);
+        color: #00D9A5;
+    }
+    .alert-error {
+        background: rgba(255, 107, 107, 0.2);
+        border: 1px solid rgba(255, 107, 107, 0.5);
+        color: #FF6B6B;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #00C6FB;
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    .back-link:hover {
+        color: #fff;
+    }
+    .danger-zone {
+        border-color: rgba(255, 107, 107, 0.3);
+    }
+    .danger-zone h3 {
+        color: #FF6B6B;
+        border-color: rgba(255, 107, 107, 0.2);
+    }
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <a href="{% url 'user_profile' %}" class="back-link">← 返回个人中心</a>
+    
+    <h1 class="page-title">⚙️ 账号设置</h1>
+    
+    {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+    {% endif %}
+    
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <!-- 基本信息 -->
+    <form method="post" action="{% url 'user_settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+        
+        <div class="settings-card">
+            <h3>📝 基本信息</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" value="{{ user.username }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" name="email" value="{{ user.email }}" placeholder="请输入邮箱">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>所在地</label>
+                    <input type="text" name="location" value="{{ profile.location|default:'' }}" placeholder="例如：北京">
+                </div>
+                <div class="form-group">
+                    <label>头像URL（可选）</label>
+                    <input type="url" name="avatar" value="{{ profile.avatar|default:'' }}" placeholder="https://...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>个人简介</label>
+                <textarea name="bio" placeholder="介绍一下自己...">{{ profile.bio|default:'' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">保存修改</button>
+        </div>
+    </form>
+    
+    <!-- 修改密码 -->
+    <form method="post" action="{% url 'user_settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+        
+        <div class="settings-card">
+            <h3>🔐 修改密码</h3>
+            <div class="form-group">
+                <label>当前密码</label>
+                <input type="password" name="old_password" placeholder="请输入当前密码" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" name="new_password" placeholder="请输入新密码（至少6位）" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" name="new_password2" placeholder="请再次输入新密码" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">修改密码</button>
+        </div>
+    </form>
+    
+    <!-- 危险操作 -->
+    <div class="settings-card danger-zone">
+        <h3>⚠️ 危险区域</h3>
+        <p style="color: #fff; margin-bottom: 20px;">以下操作不可逆，请谨慎操作</p>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <form method="post" action="{% url 'clear_history' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" onclick="return confirm('确定要清空所有浏览记录吗？')">清空浏览记录</button>
+            </form>
+            <form method="post" action="{% url 'clear_favorites' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" onclick="return confirm('确定要清空所有收藏吗？此操作不可恢复！')">清空所有收藏</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

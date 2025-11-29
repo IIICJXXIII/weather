@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}历史数据查询 - NCDC 气象数据平台{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* 页面居中布局 */
+    .history-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    .history-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .history-content {
+        width: 100%;
+        max-width: 800px;
+    }
+    .form-label {
+        color: #00C6FB;
+        font-size: 14px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .query-form {
+        padding: 10px 0;
+    }
+    .query-form .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .query-form .col-md-4 {
+        flex: 1;
+        min-width: 200px;
+    }
+    .quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+    .quick-links a {
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .quick-links a:hover {
+        transform: translateY(-2px);
+        background: rgba(0, 198, 251, 0.3);
+    }
+    .result-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+    }
+    .result-stats .stat-card {
+        flex: 1;
+        min-width: 180px;
+        max-width: 250px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="page-header">
+        <h1 class="page-title">📅 历史数据查询</h1>
+        <p class="page-subtitle">查询指定省份和月份的气象数据</p>
+    </div>
+
+    <!-- 查询表单 -->
+    <div class="history-row">
+        <div class="history-content">
+            <div class="panel">
+                <form method="get" class="query-form">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">选择省份</label>
+                            <select name="province" class="form-control-custom w-100" required>
+                                <option value="">-- 请选择省份 --</option>
+                                {% for p in provinces %}
+                                <option value="{{ p }}" {% if p == selected_province %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">选择月份</label>
+                            <select name="month" class="form-control-custom w-100" required>
+                                <option value="">-- 请选择月份 --</option>
+                                {% for m in months %}
+                                <option value="{{ m }}" {% if m|stringformat:"s" == selected_month %}selected{% endif %}>{{ m }}月</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn-primary-custom w-100">
+                                🔍 查询数据
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查询结果 -->
+    {% if result_data %}
+    <div class="history-row">
+        <div class="history-content">
+            <div class="panel">
+                <h3 class="panel-title">📊 {{ result_data.province }} - {{ result_data.month }}月 气象数据</h3>
+                
+                <div class="result-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            {% if result_data.temp is not None %}
+                            {{ result_data.temp }}°C
+                            {% else %}
+                            --
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">🌡️ 平均温度</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            {% if result_data.wind is not None %}
+                            {{ result_data.wind }} m/s
+                            {% else %}
+                            --
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">💨 平均风速</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            {% if result_data.pressure is not None %}
+                            {{ result_data.pressure }}
+                            {% else %}
+                            --
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">🔽 平均气压 (hPa)</div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'province_detail' result_data.province %}" class="btn-secondary-custom">
+                        查看{{ result_data.province }}详情 →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif selected_province or selected_month %}
+    <div class="history-row">
+        <div class="history-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">😕</div>
+                <div class="empty-state-text">未找到相关数据，请检查查询条件</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="history-row">
+        <div class="history-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">👆</div>
+                <div class="empty-state-text">请选择省份和月份进行查询</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 快捷查询 -->
+    <div class="history-row" style="margin-top: 30px;">
+        <div class="history-content">
+            <div class="panel">
+                <h3 class="panel-title">⚡ 快捷查询</h3>
+                <div class="quick-links">
+                    {% for p in provinces|slice:":12" %}
+                    <a href="?province={{ p }}&month=7" class="tag tag-primary">{{ p }} · 7月</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
